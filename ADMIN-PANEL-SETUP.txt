@@ -1,0 +1,65 @@
+ADMIN DASHBOARD + BACKEND DATABASE SETUP
+
+WHAT THIS VERSION DOES
+- Visit https://YOUR-DOMAIN/admin.html to open the admin dashboard.
+- Change price and Telegram invite URL and click Save Settings.
+- Settings are stored in Supabase, not hardcoded in public HTML.
+- The public website fetches the current price from /api/public-settings.
+- Cashfree order amount is read from the same database price.
+- Telegram redirect reads the private link from the database only after server-side Cashfree payment verification.
+- No GitHub HTML edit and no redeploy is needed for routine price/link changes.
+- Cashfree credentials remain in Vercel environment variables.
+
+STEP 1 — SUPABASE TABLE
+1. Open https://supabase.com/dashboard and create/open your project.
+2. Open SQL Editor -> New query.
+3. Paste and run the contents of SUPABASE-SETUP.sql.
+4. In Table Editor -> settings, edit row id=1. Set price to digits only, e.g. 599 (not ₹599), and set your actual HTTPS Telegram invite link.
+5. Do not create public/anon policies for this table. The server uses the service-role key.
+
+STEP 2 — GET SUPABASE BACKEND CREDENTIALS
+1. Copy the Project URL.
+2. Copy the service_role secret key from the Supabase API keys/settings page. Newer dashboards may label it secret key.
+3. Add it ONLY to Vercel Environment Variables, never to HTML, GitHub, or a public client script.
+
+STEP 3 — VERCEL ENVIRONMENT VARIABLES
+Keep the existing Cashfree variables and add:
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_secret
+ADMIN_PASSWORD=choose_a_unique_password_at_least_12_characters
+
+Existing variables still needed:
+CASHFREE_APP_ID
+CASHFREE_SECRET_KEY
+CASHFREE_ENV (sandbox or production)
+CASHFREE_API_VERSION (optional; defaults to 2025-01-01)
+SITE_URL=https://YOUR-VERCEL-DOMAIN
+
+TELEGRAM_INVITE_LINK and EXPECTED_AMOUNT are no longer used for the live price/Telegram destination by this version. The database is the source of truth. Keep Cashfree secret credentials only in Vercel.
+
+STEP 4 — DEPLOY
+1. Replace the files in your GitHub repository with the files in this ZIP, preserving the existing folder structure.
+2. Commit and push to the same connected branch.
+3. In Vercel, add the environment variables above to the correct project and Production environment.
+4. Redeploy once after the code and environment variables are set.
+
+STEP 5 — USE THE ADMIN PANEL
+1. Open https://YOUR-DOMAIN/admin.html.
+2. Enter ADMIN_PASSWORD.
+3. Click Load current settings.
+4. Change price and/or Telegram link.
+5. Click Save Settings.
+6. Refresh the public website to see the updated price. No redeploy is required.
+
+TEST BEFORE GOING LIVE
+- Test in CASHFREE_ENV=sandbox first.
+- Confirm the displayed price matches the Cashfree order amount.
+- Complete a successful test payment and confirm Telegram redirect.
+- Confirm failed/pending payments do not redirect to Telegram.
+- Switch to production only after all tests pass.
+
+SECURITY NOTES
+- Do not commit the Supabase service-role key, Cashfree secret, or admin password.
+- Do not enable public SELECT/UPDATE on the settings table.
+- The public endpoint returns only the price, never the private Telegram link.
+- Payment verification stays server-side.
